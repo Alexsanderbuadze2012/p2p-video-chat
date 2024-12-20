@@ -7,5 +7,5 @@
   }
 }
 git add package.json
-git commit -m "Fix package.json"
+git commit -m "Fix package.json syntax"
 git push origin main
