@@ -1,11 +1,11 @@
-echo '{
-  "name": "P2P Video call",
+{
+  "name": "p2p-video-chat",
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
     "ws": "^8.5.0"
   }
-}' > package.json
+}
 git add package.json
-git commit -m "Add package.json"
+git commit -m "Fix package.json"
 git push origin main
