@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoIP Video Call</title>
+</head>
+<body>
+    <h1>VoIP Video Call</h1>
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <button id="startCall">Start Call</button>
+    
+    <script>
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const startCallBtn = document.getElementById('startCall');
+
+        let localStream;
+        let peerConnection;
+        const signalingServerURL = 'wss://your-signaling-server.com'; // Replace with your signaling server
+
+        async function init() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+            } catch (err) {
+                console.error('Error accessing media devices.', err);
+            }
+        }
+
+        startCallBtn.addEventListener('click', async () => {
+            if (peerConnection) return;
+
+            peerConnection = new RTCPeerConnection();
+            peerConnection.addStream(localStream);
+
+            // ICE candidate handling
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    sendMessage(JSON.stringify({ type: 'ice-candidate', candidate: event.candidate }));
+                }
+            };
+
+            // Remote stream handling
+            peerConnection.onaddstream = event => {
+                remoteVideo.srcObject = event.stream;
+            };
+
+            // Offer creation
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            sendMessage(JSON.stringify({ type: 'offer', sdp: offer }));
+        });
+
+        function sendMessage(message) {
+            const ws = new WebSocket(signalingServerURL);
+            ws.onopen = () => ws.send(message);
+            ws.onmessage = event => {
+                handleSignalingData(JSON.parse(event.data));
+            };
+        }
+
+        async function handleSignalingData(data) {
+            if (data.type === 'offer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                sendMessage(JSON.stringify({ type: 'answer', sdp: answer }));
+            } else if (data.type === 'answer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+            } else if (data.type === 'ice-candidate') {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
