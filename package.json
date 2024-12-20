@@ -1,5 +1,5 @@
 echo '{
-  "name": "my-webrtc-app",
+  "name": "P2P Video call",
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
